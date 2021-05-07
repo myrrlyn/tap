@@ -90,7 +90,7 @@ where
 	///
 	/// # Examples
 	///
-	/// Here we use `.tap_mut()` to sort an array without requring multiple
+	/// Here we use `.tap_mut()` to sort an array without requiring multiple
 	/// bindings.
 	///
 	/// ```rust
@@ -120,8 +120,8 @@ where
 
 	/// Immutable access to the `Borrow<B>` of a value.
 	///
-	/// This function is identcal to [`Tap::tap`], except that the effect
-	/// function recevies an `&B` produced by `Borrow::<B>::borrow`, rather than
+	/// This function is identical to [`Tap::tap`], except that the effect
+	/// function receives an `&B` produced by `Borrow::<B>::borrow`, rather than
 	/// an `&Self`.
 	///
 	/// [`Tap::tap`]: trait.Tap.html#method.tap
@@ -350,7 +350,7 @@ where
 	/// The interior type that the container may or may not carry.
 	type Val: ?Sized;
 
-	/// Immutabily accesses an interior value only when it is present.
+	/// Immutably accesses the contained value element when present, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap`], except that it is required
 	/// to check the implementing container for value presence before running.
@@ -358,9 +358,18 @@ where
 	/// as being empty.
 	///
 	/// [`Tap::tap`]: trait.Tap.html#method.tap
+	///
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapOptional;
+	///
+	/// let (some, none) = (Some(10), None::<i32>);
+	/// assert_eq!(some.tap_some(|x| println!("Some({})", x)), some); // Prints `Some(10)`.
+	/// assert_eq!(none.tap_some(|x| println!("Some({})", x)), none); // Prints nothing.
+	/// ```
 	fn tap_some(self, func: impl FnOnce(&Self::Val)) -> Self;
 
-	/// Mutably accesses an interor value only when it is present.
+	/// Mutably accesses the contained value element when present, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap_mut`], except that it is
 	/// required to check the implementing container for value presence before
@@ -368,9 +377,18 @@ where
 	/// is marked as being empty.
 	///
 	/// [`Tap::tap_mut`]: trait.Tap.html#method.tap_mut
+	///
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapOptional;
+	///
+	/// let (some, none) = (Some(10), None::<i32>);
+	/// assert_eq!(some.tap_some_mut(|x| *x += 1), Some(11));
+	/// assert_eq!(none.tap_some_mut(|x| *x += 1), none);
+	/// ```
 	fn tap_some_mut(self, func: impl FnOnce(&mut Self::Val)) -> Self;
 
-	/// Runs an effect function when the container is empty.
+	/// Runs a side effect when the contained value element is absent, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap`], except that it is required
 	/// to check the implementing container for value absence before running.
@@ -378,6 +396,19 @@ where
 	/// as being non-empty.
 	///
 	/// [`Tap::tap`]: trait.Tap.html#method.tap
+	///
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapOptional;
+	///
+	/// let mut x = 0;
+	///
+	/// Some(10).tap_none(|| x += 1); // This does nothing.
+	/// assert_eq!(x, 0);
+	///
+	/// None::<i32>.tap_none(|| x += 1); // This increments x.
+	/// assert_eq!(x, 1);
+	/// ```
 	fn tap_none(self, func: impl FnOnce()) -> Self;
 
 	/// Calls `.tap_some()` only in debug builds, and is erased in release
@@ -465,7 +496,7 @@ where
 	/// The interior type used to indicate a failed construction.
 	type Err: ?Sized;
 
-	/// Immutably accesses an interior success value.
+	/// Immutably accesses the contained `Ok` value element of a fallible container, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap`], except that it is required
 	/// to check the implementing container for value success before running.
@@ -473,9 +504,18 @@ where
 	/// as being a failure.
 	///
 	/// [`Tap::tap`]: trait.Tap.html#method.tap
+	///
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapFallible;
+	///
+	/// let (ok, err) = (Ok::<i32, i32>(10), Err::<i32, i32>(10));
+	/// assert_eq!(ok.tap_ok(|x| println!("Ok({})", x)), ok); // Prints `Ok(10)`.
+	/// assert_eq!(err.tap_ok(|x| println!("Ok({})", x)), err); // Prints nothing.
+	/// ```
 	fn tap_ok(self, func: impl FnOnce(&Self::Ok)) -> Self;
 
-	/// Mutably accesses an interior success value.
+	/// Mutably accesses the contained `Ok` value element of a fallible container, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap_mut`], except that it is
 	/// required to check the implementing container for value success before
@@ -483,9 +523,18 @@ where
 	/// is marked as being a failure.
 	///
 	/// [`Tap::tap_mut`]: trait.Tap.html#method.tap_mut
+	///
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapFallible;
+	///
+	/// let (ok, err) = (Ok::<i32, i32>(10), Err::<i32, i32>(10));
+	/// assert_eq!(ok.tap_ok_mut(|x| *x += 1), Ok(11));
+	/// assert_eq!(err.tap_ok_mut(|x| *x += 1), Err(10));
+	/// ```
 	fn tap_ok_mut(self, func: impl FnOnce(&mut Self::Ok)) -> Self;
 
-	/// Immutably accesses an interior failure value.
+	/// Immutably accesses the contained `Err` value element of a fallible container, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap`], except that it is required
 	/// to check the implementing container for value failure before running.
@@ -493,9 +542,19 @@ where
 	/// as being a success.
 	///
 	/// [`Tap::tap`]: trait.Tap.html#method.tap
+	///
+	//
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapFallible;
+	///
+	/// let (ok, err) = (Ok::<i32, i32>(10), Err::<i32, i32>(10));
+	/// assert_eq!(err.tap_err(|x| println!("Err({})", x)), err); // Prints `Err(10)`.
+	/// assert_eq!(ok.tap_err(|x| println!("Err({})", x)), ok); // Prints nothing.
+	/// ```
 	fn tap_err(self, func: impl FnOnce(&Self::Err)) -> Self;
 
-	/// Mutably accesses an interior failure value.
+	/// Mutably accesses the contained `Err` value element of a fallible container, passing the value on.
 	///
 	/// This function is identical to [`Tap::tap_mut`], except that it is
 	/// required to check the implementing container for value failure before
@@ -503,6 +562,14 @@ where
 	/// is marked as being a success.
 	///
 	/// [`Tap::tap_mut`]: trait.Tap.html#method.tap_mut
+	/// # Examples
+	/// ```rust
+	/// use tap::tap::TapFallible;
+	///
+	/// let (ok, err) = (Ok::<i32, i32>(10), Err::<i32, i32>(10));
+	/// assert_eq!(err.tap_err_mut(|x| *x += 1), Err(11));
+	/// assert_eq!(ok.tap_err_mut(|x| *x += 1), Ok(10));
+	/// ```
 	fn tap_err_mut(self, func: impl FnOnce(&mut Self::Err)) -> Self;
 
 	/// Calls `.tap_ok()` only in debug builds, and is erased in release builds.
